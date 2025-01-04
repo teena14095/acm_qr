@@ -4,26 +4,31 @@ from requests.auth import HTTPBasicAuth
 from datetime import datetime
 import cv2
 import json
-from pyzbar.pyzbar import decode
 import numpy as np
+import os
 
 app = Flask(__name__)
-print(__name__)
 
 @app.route("/")
 def hello_world():
     return f"<h1 style='text-align: center'>QR Code Scanner</h1>" \
-           f"<div style='display: flex; align-items: center; justify-content: center; width: 100vw; height: 80vh;'><img src='{url_for('video_feed')}' alt='QR Code Scanner Feed' align-self:center></div>" \
+           f"<div style='display: flex; align-items: center; justify-content: center; width: 100vw; height: 80vh;'>" \
+           f"<img src='{url_for('video_feed')}' alt='QR Code Scanner Feed' align-self:center></div>" \
            f"<p style='text-align: center'>Position the QR code within the frame.</p>" 
 
-def rescale(width,height):
-    cap.set(3,width)
-    cap.set(4,height)
+def rescale(width, height):
+    cap.set(3, width)
+    cap.set(4, height)
 
 cap = cv2.VideoCapture(0)
-import ctypes
+rescale(1111, 950)
 
-rescale(1111,950)
+def decode_qr(frame):
+    detector = cv2.QRCodeDetector()
+    data, points, _ = detector.detectAndDecode(frame)
+    if points is not None and data:
+        return data, points
+    return None, None
 
 def generate_frames():
     last_scanned_data = None
@@ -35,68 +40,60 @@ def generate_frames():
         if not success:
             break
         else:
-            qr_codes = decode(frame)
+            qr_data, points = decode_qr(frame)
 
-            if qr_codes:
-                for barcode in qr_codes:
-                    qr_data = barcode.data.decode('utf-8')
+            if qr_data and qr_data != last_scanned_data:
+                try:
+                    qr_data_dict = json.loads(qr_data)
+                    name = qr_data_dict.get("name", "")
+                    roll = qr_data_dict.get("roll", "")
+                    position = qr_data_dict.get("position", "")
+                    date = datetime.now().strftime("%d/%m/%Y")
+                    time = datetime.now().strftime("%H:%M:%S")
 
-                    if qr_data != last_scanned_data:
+                    endpoint = os.environ.get("SHEET_ENDPOINT", "https://api.sheety.co/da59243defdbf5e567a27b8a3e86f53d/attendance/sheet1")
+                    parameters2 = {
+                        "sheet1": {
+                            "date": date,
+                            "time": time,
+                            "name": name,
+                            "roll no": roll,
+                            "position": position
+                        }
+                    }
 
-                        try:
-                            qr_data_dict = json.loads(qr_data)
-                            name = qr_data_dict.get("name", "")
-                            roll = qr_data_dict.get("roll", "")
-                            position = qr_data_dict.get("position", "")
-                            date = datetime.now().strftime("%d/%m/%Y")
-                            time = datetime.now().strftime("%H:%M:%S")
+                    basic = HTTPBasicAuth(
+                        os.environ.get("USERNAME", "username_not_found"),
+                        os.environ.get("PASSWORD", "password_not_found")
+                    )
+                    response2 = requests.post(url=endpoint, json=parameters2, auth=basic)
+                    print(response2.text)
 
-                            endpoint = "https://api.sheety.co/da59243defdbf5e567a27b8a3e86f53d/attendance/sheet1" #SHEET_ENDPOINT = os.environ.get("SHEET_ENDPOINT", "endpoint doesnt exist")
-                            parameters2 = {
-                                "sheet1" : {
-                                    "date" : date,
-                                    "time" : time,
-                                    "name" : name,
-                                    "roll no" : roll,
-                                    "position" : position
-                                }
-                            }
+                    print(f"Scanned QR Code: {name} on {date} at {time}")
+                    display_data[qr_data] = "Accessed"
 
-                            basic = HTTPBasicAuth(
-                                "teena14", #USERNAME = os.environ.get("USERNAME", "username doesnt exist")
-                                "p0o9i8u7", #PASSWORD = os.environ.get("PASSWORD", "password doesnt exist")
-                            )
-                            response2 = requests.post(url=endpoint,json=parameters2,auth=basic)
-                            print(response2.text)
+                except json.JSONDecodeError:
+                    print("Unauthorized/wrong QR data. Skipping.")
+                    display_data[qr_data] = "Unauthorized"
 
-                            print(f"Scanned QR Code: {name} on {date} at {time}")
+                last_scanned_data = qr_data
 
-                            display_data[qr_data] = "Accessed"
+            if points is not None:
+                points = points.astype(int)
+                for i in range(len(points)):
+                    pt1 = tuple(points[i][0])
+                    pt2 = tuple(points[(i + 1) % len(points)][0])
+                    frame = cv2.line(frame, pt1, pt2, color=(0, 255, 0), thickness=2)
 
-                        except json.JSONDecodeError:
-                            print("Unauthorized/wrong QR data. Skipping.")
-                            display_data[qr_data] = "Unauthorized"
+                if qr_data in display_data:
+                    text_to_display = display_data[qr_data]
+                    text_position = (points[0][0][0], points[0][0][1] - 10)
+                    cv2.putText(frame, text_to_display, text_position, fontFace=cv2.FONT_HERSHEY_SIMPLEX,
+                                fontScale=0.8, color=(0, 0, 255), thickness=2)
 
-                        last_scanned_data = qr_data
-
-                    frame = cv2.rectangle(frame, pt1=(barcode.rect.left, barcode.rect.top),
-                                          pt2=(barcode.rect.left + barcode.rect.width,
-                                           barcode.rect.top + barcode.rect.height),
-                                          color=(0, 255, 0),thickness=2)
-
-                    frame = cv2.polylines(frame, pts=[np.array(barcode.polygon)],isClosed= True, color=(255, 0, 0), thickness=2)
-
-                    if qr_data in display_data:
-                        text_to_display = display_data[qr_data]
-                        text_position = (barcode.rect.left, barcode.rect.top - 10)
-                        cv2.putText(frame, text_to_display, org=text_position,fontFace=
-                                    cv2.FONT_HERSHEY_SIMPLEX,fontScale= 0.8, color=(0, 0, 0),thickness= 2)
-
-            # Encode the frame as a JPEG
             ret, buffer = cv2.imencode('.jpg', frame)
             frame = buffer.tobytes()
 
-            # Yield the frame in byte format for Flask to render
             yield (b'--frame\r\n'
                    b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
 
@@ -105,4 +102,4 @@ def video_feed():
     return Response(generate_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
