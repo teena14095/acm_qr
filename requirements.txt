@@ -1,6 +1,5 @@
 Flask
 requests
-pyzbar
 opencv-python
 numpy
 gunicorn
