@@ -3,4 +3,4 @@ requests==2.31.0
 pyzbar==0.1.9
 opencv-python==4.8.0.76
 numpy==1.24.2
-gunicorm
+gunicorn
