@@ -15,17 +15,19 @@ last_detected_qr = None
 @app.route("/")
 def hello_world():
     return """
-    <h1 style='text-align: center; margin-top: 20px;'>QR Code Scanner</h1>
+    <div style='display: flex; flex-direction: column; width: 100vw; height: 100vh; background-color:rgb(8, 8, 8);'>
+    <h1 style='text-align: center; margin-top: 20px; color: #11a367''>QR Code Scanner</h1>
 
-    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: calc(100vh - 100px); position: relative;">
-        <video id="video" autoplay playsinline style="border: 1px solid black; width: 640px; height: 480px; box-sizing: border-box;"></video>
-        <canvas id="overlayCanvas" 
-                style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 640px; height: 480px; pointer-events: none;"></canvas>
-        <p style="font-size: 18px; color: gray; margin: 10px 0; text-align: center;">Position the QR code within the frame.</p>
-        <div id="messageOverlay" 
-            style="position: absolute; pointer-events: none; font-size: 24px; font-weight: bold; 
-                   text-shadow: 1px 1px 2px black; visibility: hidden;">
-            Accessed!
+        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: calc(100vh - 100px); position: relative;">
+            <video id="video" autoplay playsinline style="border: 1px solid black; width: 640px; height: 480px; box-sizing: border-box;"></video>
+            <canvas id="overlayCanvas" 
+                    style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 640px; height: 480px; pointer-events: none;"></canvas>
+            <p style="font-size: 18px; color:rgb(230, 230, 230); margin: 10px 0; text-align: center;">Position the QR code within the frame.</p>
+            <div id="messageOverlay" 
+                style="position: absolute; pointer-events: none; font-size: 24px; font-weight: bold; 
+                    text-shadow: 1px 1px 2px black; visibility: hidden;">
+                Accessed!
+            </div>
         </div>
     </div>
 
