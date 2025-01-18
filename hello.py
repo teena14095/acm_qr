@@ -39,7 +39,6 @@ def hello_world():
         let lastBoundingBox = null; // Store the last detected bounding box
         let lastVisibilityTimestamp = Date.now(); // Track when the box was last visible
 
-        // Access the webcam
         navigator.mediaDevices.getUserMedia({ video: true })
             .then(stream => {
                 video.srcObject = stream;
@@ -48,7 +47,6 @@ def hello_world():
                 console.error('Error accessing webcam:', err);
             });
 
-        // Adjust canvas size to match video
         video.addEventListener('loadedmetadata', () => {
             overlayCanvas.width = video.videoWidth;
             overlayCanvas.height = video.videoHeight;
@@ -84,7 +82,6 @@ def hello_world():
                         accessMessage.textContent = "Access Granted!";
                         accessMessage.style.display = "block";
 
-                        // Hide the message after 2 seconds
                         setTimeout(() => {
                             accessMessage.style.display = "none";
                         }, 2000);
@@ -99,12 +96,11 @@ def hello_world():
 
         // Function to draw bounding boxes and labels
         function drawBoundingBoxesAndLabel(points, ctx) {
-    // Extract bounding box dimensions
+        // Extract bounding box dimensions
             const [topLeft, topRight, bottomRight, bottomLeft] = points;
             const width = topRight[0] - topLeft[0];
             const height = bottomLeft[1] - topLeft[1];
 
-            // Add label
             ctx.fillStyle = 'red';
             ctx.font = '25px Arial';
             const label = 'Accessed';
@@ -112,7 +108,6 @@ def hello_world():
             const textY = topLeft[1] - 10;
             ctx.fillText(label, textX, textY);
 
-            // Remove the text after 2 seconds
             setTimeout(() => {
                 // Clear the area where the text was drawn
                 const textWidth = ctx.measureText(label).width;
